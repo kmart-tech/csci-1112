@@ -4,7 +4,7 @@ CSCI 1112 - OOP 2
 11/22/2021
 
 Chapter 18
-Exercise 3 - greatest common divisor recursively
+Exercise 9 - reverse string recursively
  */
 
 import java.util.Scanner;
