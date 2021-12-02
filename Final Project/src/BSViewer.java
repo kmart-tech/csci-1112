@@ -1,13 +1,16 @@
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -29,14 +32,16 @@ public class BSViewer extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        Arrays.fill(topArray, 888);
+        Arrays.fill(topArray, 8);
         Arrays.fill(botArray, 11);
         BSPane bsPane = new BSPane(0, false);
         BorderPane borderPane = new BorderPane();
         HBox topMenu = new HBox();
-        borderPane.setCenter(bsPane);
+
+
         borderPane.setTop(topMenu);
-        Scene scene = new Scene(borderPane, 700,500);
+        borderPane.setCenter(bsPane);
+        Scene scene = new Scene(borderPane, 700, 500);
 
         // user interface
 
@@ -51,7 +56,7 @@ public class BSViewer extends Application {
         // handlers and listeners
 
         indicesBox.setOnAction(event -> {
-            if(indicesBox.isSelected()) bsPane.setShowIndices(true);
+            if (indicesBox.isSelected()) bsPane.setShowIndices(true);
             else bsPane.setShowIndices(false);
         });
 
@@ -62,10 +67,16 @@ public class BSViewer extends Application {
         });
 
         scene.setOnKeyPressed(event -> {
-            switch(event.getCode()) {
-                case RIGHT: bsPane.incStart(); break;
-                case LEFT: bsPane.decStart(); break;
-                case R: bsPane.resetSpacing(); break;
+            switch (event.getCode()) {
+                case RIGHT:
+                    bsPane.incStart();
+                    break;
+                case LEFT:
+                    bsPane.decStart();
+                    break;
+                case R:
+                    bsPane.resetSpacing();
+                    break;
             }
         });
 
@@ -76,6 +87,7 @@ public class BSViewer extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         bsPane.drawBS();
+
     }
 
     class BSPane extends Pane {
@@ -117,52 +129,23 @@ public class BSViewer extends Application {
             double pTickSpacing = (qTickSpacing * q) / (double) p;
 
             // calculate where to start for topArray and botArray
-            topCount = (int)(drawStart / pTickSpacing);
-            botCount = (int)(drawStart / qTickSpacing);
+            topCount = (int) (drawStart / pTickSpacing);
+            botCount = (int) (drawStart / qTickSpacing);
 
-            // draw the horizontal lines
-            Line topLine = new Line(0, topLineY,widthProperty().doubleValue(), topLineY);
-            Line botLine = new Line(0, botLineY,widthProperty().doubleValue(), botLineY);
+            BSLine mainline = new BSLine(topArray,qTickSpacing,0,q,true);
 
-            getChildren().addAll(topLine, botLine);
+            mainline.setLayoutY(200);
+            mainline.setLayoutX(10);
 
-            // draw tick marks on the top line every p
+            //mainline.setWidthManual(getWidth());
 
-            for (double i = 0; i < widthProperty().intValue(); i += pTickSpacing) {
-                Line tick = new Line(i, topLineY - tickSize, i, topLineY + tickSize);
-                // draw the number above the tick
-                Text number = new Text(String.valueOf(topArray[topCount]));
-                number.setX(i - number.getLayoutBounds().getWidth() / 2);
-                number.setY(topLineY - 10);
-                getChildren().addAll(tick, number);
-                if (showIndices) {
-                    Text index = new Text(String.valueOf(topCount));
-                    index.setX(i - index.getLayoutBounds().getWidth() / 2);
-                    index.setY(topLineY + 20);
-                    getChildren().add(index);
-                }
-                topCount++;
-            }
 
-            for (double i = 0; i < widthProperty().intValue(); i += qTickSpacing) {
-                Line tick = new Line(i, botLineY - tickSize, i, botLineY + tickSize);
-                Text number = new Text(String.valueOf(botArray[botCount]));
-                number.setX(i - number.getLayoutBounds().getWidth() / 2);
-                number.setY(botLineY - 10);
-                getChildren().addAll(tick, number);
-                if ((i / qTickSpacing) % q == 0) {
-                    Line edge = new Line(i, botLineY, i , topLineY);
-                    edge.setOpacity(.7);
-                    getChildren().add(edge);
-                }
-                if (showIndices) {
-                    Text index = new Text(String.valueOf(botCount));
-                    index.setX(i - index.getLayoutBounds().getWidth() / 2);
-                    index.setY(botLineY + 20);
-                    getChildren().add(index);
-                }
-                botCount++;
-            }
+            mainline.drawLine();
+
+            getChildren().add(mainline);
+
+
+            System.out.println(mainline.getWidth());
         }
 
         public void incSpacing() {
@@ -208,17 +191,6 @@ public class BSViewer extends Application {
             drawStart = 0;
             drawBS();
         }
-    }
-
-    // add each BSLine pane to the big boy
-    class BSLine extends Pane {
-        int[] coordinates;
-        double tickOffset = 0;
-        double tickSpacing = 50;
-        boolean visibleIndex = false;
-        ArrayList<Node> bsElems = new ArrayList<Node>();
-
-        public BSLine(){}
     }
 }
 
