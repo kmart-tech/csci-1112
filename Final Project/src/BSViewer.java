@@ -12,11 +12,20 @@ import javafx.stage.Stage;
 
 import java.util.Arrays;
 
+
+/*
+Todo:
+parser for BTBBTBT
+input from files (separate class with static functions)
+make sure tick offset and count offset is correct
+ */
+
+
 public class BSViewer extends Application {
     final int p = 2;
     final int q = 4;
 
-    int[][] bsArrays = new int[5][1000];
+    int[][] bsArrays = new int[4][1000];
 
     public static void main(String[] args) {
         launch(args);
@@ -94,6 +103,7 @@ public class BSViewer extends Application {
         boolean direction = false;
         double lineSpacing = 100; // space between lines (maybe should be negative for when going up
         int mod;
+        boolean showVerticalLine = false;
         // counts used for knowing when to access arrays.
 
         boolean visibleIndex = false; // display absolute count with relative count
@@ -103,11 +113,11 @@ public class BSViewer extends Application {
 
             if (direction) {
                 lineSpacing = -100;
-                mod = q; // if up we go over every q to draw lines
+                mod = p; // if up we go over every q to draw lines
                 tickSpacingScaling = (double) q / p;
             }
             else {
-                mod = p;
+                mod = q;
                 tickSpacingScaling = (double) p / q;
             }
 
@@ -129,6 +139,8 @@ public class BSViewer extends Application {
         public void drawBS() {
             getChildren().clear();
 
+            setTranslateX(30); // change based on max label size like BBT
+
             if (direction) {
                 // if up we start drawing the line towards the bottom
                 firstYLocation = getHeight() - 100;
@@ -141,10 +153,12 @@ public class BSViewer extends Application {
             double tickOffset = 0;
             double tickSpacing = firstTickSpacing;
 
+            showVerticalLine = false;
 
             for (int[] coordinates: bsArrays) {
                 drawLines(lineY, tickOffset, tickSpacing, coordinates, 0);
 
+                showVerticalLine = true; // true after the first line is drawn
                 lineY += lineSpacing;
                 //tickOffset *=
                 tickSpacing *= tickSpacingScaling;
@@ -164,10 +178,11 @@ public class BSViewer extends Application {
                 number.setY(lineY - 10);
                 getChildren().addAll(tick, number);
 
-                if ((int) (i / tickSpacing) % mod == 0) {
-                    Line edge = new Line(i, lineY, i, lineY + lineSpacing);
-                    edge.setOpacity(.7);
-                    getChildren().add(edge); // add to a separate group/pane that is resized by the BSPane?
+                // throw everything above in this if statement and offset the numbers to the left or right for visibility?
+                if ((int) (i / tickSpacing) % mod == 0 && showVerticalLine) { // connecting vertical lines
+                    Line edge = new Line(i, lineY, i, lineY - lineSpacing); // line goes the opposite way the lines are being built
+                    edge.setOpacity(.6);
+                    getChildren().add(edge);
                 }
 
                 if (visibleIndex) {
