@@ -10,11 +10,13 @@ import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
-public class BSViewer extends Application {
-    final int p = 5;
-    final int q = 7;
+import java.util.Arrays;
 
-    int[][] bsArrays = new int[3][1000];
+public class BSViewer extends Application {
+    final int p = 2;
+    final int q = 4;
+
+    int[][] bsArrays = new int[5][1000];
 
     public static void main(String[] args) {
         launch(args);
@@ -24,12 +26,10 @@ public class BSViewer extends Application {
     public void start(Stage primaryStage) {
 
         for (int[] array: bsArrays) {
-            for (int i = 0; i < array.length; i++) {
-                array[i] = (int) Math.random() * 5;
-            }
+            Arrays.fill(array, 9);
         }
 
-        BSPane bsPane = new BSPane(0, false);
+        BSPane bsPane = new BSPane( false);
         BorderPane borderPane = new BorderPane();
         HBox topMenu = new HBox();
 
@@ -64,10 +64,10 @@ public class BSViewer extends Application {
         scene.setOnKeyPressed(event -> {
             switch (event.getCode()) {
                 case RIGHT:
-                    bsPane.incStart();
+                    bsPane.incIndex();
                     break;
                 case LEFT:
-                    bsPane.decStart();
+                    bsPane.decIndex();
                     break;
                 case R:
                     bsPane.resetSpacing();
@@ -82,27 +82,35 @@ public class BSViewer extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
         bsPane.drawBS();
-
     }
 
     class BSPane extends Pane {
         int height = 100; // pixels between horizontal lines
         double firstTickSpacing = 50; // since q > p, this is the minimal for tick spacing
-        double topLineY = 200;
-        double botLineY = topLineY + height;
+        double tickSpacingScaling; // q/p when going up and p/q going down
+        double firstYLocation;
         double tickSize = 5; // height above line in pixels
         double drawStart = 0;
+        boolean direction = false;
+        double lineSpacing = 100; // space between lines (maybe should be negative for when going up
+        int mod;
         // counts used for knowing when to access arrays.
-        int topCount = 0;
-        int botCount = 0;
 
         boolean visibleIndex = false; // display absolute count with relative count
 
+        public BSPane(boolean direction) {
+            this.direction = direction;
 
-        // use enum instead of boolean for direction?
-        public BSPane(int offset, boolean direction) {
-            // draw horizontal lines to the end of the pane
-            // direction affects which line will have the offset applied
+            if (direction) {
+                lineSpacing = -100;
+                mod = q; // if up we go over every q to draw lines
+                tickSpacingScaling = (double) q / p;
+            }
+            else {
+                mod = p;
+                tickSpacingScaling = (double) p / q;
+            }
+
             drawBS();
         }
 
@@ -121,37 +129,52 @@ public class BSViewer extends Application {
         public void drawBS() {
             getChildren().clear();
 
-            for (int[] coordinates: bsArrays) {
-                drawLines();
+            if (direction) {
+                // if up we start drawing the line towards the bottom
+                firstYLocation = getHeight() - 100;
+            }
+            else {
+                firstYLocation = 100;
             }
 
-            for ()
+            double lineY = firstYLocation;
+            double tickOffset = 0;
+            double tickSpacing = firstTickSpacing;
 
+
+            for (int[] coordinates: bsArrays) {
+                drawLines(lineY, tickOffset, tickSpacing, coordinates, 0);
+
+                lineY += lineSpacing;
+                //tickOffset *=
+                tickSpacing *= tickSpacingScaling;
+            }
         }
 
-        private void drawLines(double tickOffset, double tickSpacing, int[] coordinates, int arrayIndex) {
+        private void drawLines(double lineY, double tickOffset, double tickSpacing, int[] coordinates, int arrayIndex) {
             // arrayIndex is where to start in the array, and arrayNumber is which array, might need to be int[]
-            double midHeight = heightProperty().doubleValue() / 2;
             int count = 0;
-            Line line = new Line(0, midHeight, widthProperty().doubleValue(), midHeight);
+            Line line = new Line(0, lineY, widthProperty().doubleValue(), lineY);
             getChildren().add(line);
 
             for (double i = 0; i < widthProperty().doubleValue(); i += tickSpacing) {
-                Line tick = new Line(i, midHeight - tickSize, i, midHeight + tickSize);
+                Line tick = new Line(i, lineY - tickSize, i, lineY + tickSize);
                 Text number = new Text(String.valueOf(coordinates[count]));
                 number.setX(i - number.getLayoutBounds().getWidth() / 2);
-                number.setY(midHeight - 10);
+                number.setY(lineY - 10);
                 getChildren().addAll(tick, number);
-                if ((i / tickSpacing) % mod == 0) {
-                    Line edge = new Line(i, midHeight, i, midHeight + 50); // midHeight + vert line offset
+
+                if ((int) (i / tickSpacing) % mod == 0) {
+                    Line edge = new Line(i, lineY, i, lineY + lineSpacing);
                     edge.setOpacity(.7);
                     getChildren().add(edge); // add to a separate group/pane that is resized by the BSPane?
                 }
+
                 if (visibleIndex) {
-                    Text index = new Text(String.valueOf(count));
-                    index.setX(i - index.getLayoutBounds().getWidth() / 2);
-                    index.setY(midHeight + 20); // put index under the tick marks
-                    getChildren().add(index);
+                    Text absCount = new Text(String.valueOf(count));
+                    absCount.setX(i - absCount.getLayoutBounds().getWidth() / 2);
+                    absCount.setY(lineY + 20); // put index under the tick marks
+                    getChildren().add(absCount);
                 }
                 count++;
             }
@@ -181,17 +204,17 @@ public class BSViewer extends Application {
             drawBS();
         }
 
-        public void incStart() {
+        public void incIndex() {
             drawStart += q * firstTickSpacing;
             drawBS();
         }
 
-        public void incStart(int x) {
+        public void incIndex(int x) {
             drawStart += x * q * firstTickSpacing;
             drawBS();
         }
 
-        public void decStart() {
+        public void decIndex() {
             if (drawStart - q * firstTickSpacing >= 0) {
                 drawStart -= q * firstTickSpacing;
                 drawBS();
