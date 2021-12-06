@@ -22,8 +22,8 @@ make sure tick offset and count offset is correct
 
 
 public class BSViewer extends Application {
-    final int p = 2;
-    final int q = 4;
+    final int p = 3;
+    final int q = 5;
 
     int[][] bsArrays = new int[4][1000];
 
@@ -71,6 +71,7 @@ public class BSViewer extends Application {
         });
 
         scene.setOnKeyPressed(event -> {
+            //bsPane.requestFocus();
             switch (event.getCode()) {
                 case RIGHT:
                     bsPane.incIndex();
@@ -99,7 +100,7 @@ public class BSViewer extends Application {
         double tickSpacingScaling; // q/p when going up and p/q going down
         double firstYLocation;
         double tickSize = 5; // height above line in pixels
-        double drawStart = 0;
+        int indexStart = 1;
         boolean direction = false;
         double lineSpacing = 100; // space between lines (maybe should be negative for when going up
         int mod;
@@ -150,48 +151,50 @@ public class BSViewer extends Application {
             }
 
             double lineY = firstYLocation;
-            double tickOffset = 0;
             double tickSpacing = firstTickSpacing;
+            int arrayIndex = indexStart;
+            //double tickOffsetX = (indexStart % p) * tickSpacing;
+            double tickOffsetX = 0;
 
             showVerticalLine = false;
 
             for (int[] coordinates: bsArrays) {
-                drawLines(lineY, tickOffset, tickSpacing, coordinates, 0);
+                drawLines(lineY, tickOffsetX, tickSpacing, coordinates, arrayIndex);
 
                 showVerticalLine = true; // true after the first line is drawn
+                double currentTickOffset = (arrayIndex % p) * tickSpacing; // p going down
+                arrayIndex = (arrayIndex / p) * q + (int) Math.ceil(((arrayIndex % p) * q) / (double) p); // divide by p since going down
                 lineY += lineSpacing;
-                //tickOffset *=
                 tickSpacing *= tickSpacingScaling;
+                tickOffsetX = (arrayIndex % q) * tickSpacing - currentTickOffset;
             }
         }
 
-        private void drawLines(double lineY, double tickOffset, double tickSpacing, int[] coordinates, int arrayIndex) {
-            // arrayIndex is where to start in the array, and arrayNumber is which array, might need to be int[]
-            int count = 0;
+        private void drawLines(double lineY, double tickOffsetX, double tickSpacing, int[] coordinates, int arrayIndex) {
             Line line = new Line(0, lineY, widthProperty().doubleValue(), lineY);
             getChildren().add(line);
 
             for (double i = 0; i < widthProperty().doubleValue(); i += tickSpacing) {
-                Line tick = new Line(i, lineY - tickSize, i, lineY + tickSize);
-                Text number = new Text(String.valueOf(coordinates[count]));
-                number.setX(i - number.getLayoutBounds().getWidth() / 2);
+                Line tick = new Line(i + tickOffsetX, lineY - tickSize, i + tickOffsetX, lineY + tickSize);
+                Text number = new Text(String.valueOf(coordinates[arrayIndex]));
+                number.setX(i + tickOffsetX - number.getLayoutBounds().getWidth() / 2);
                 number.setY(lineY - 10);
                 getChildren().addAll(tick, number);
 
                 // throw everything above in this if statement and offset the numbers to the left or right for visibility?
-                if ((int) (i / tickSpacing) % mod == 0 && showVerticalLine) { // connecting vertical lines
-                    Line edge = new Line(i, lineY, i, lineY - lineSpacing); // line goes the opposite way the lines are being built
+                if (arrayIndex % mod == 0 && showVerticalLine) { // connecting vertical lines
+                    Line edge = new Line(i + tickOffsetX, lineY, i + tickOffsetX, lineY - lineSpacing); // line goes the opposite way the lines are being built
                     edge.setOpacity(.6);
                     getChildren().add(edge);
                 }
 
                 if (visibleIndex) {
-                    Text absCount = new Text(String.valueOf(count));
-                    absCount.setX(i - absCount.getLayoutBounds().getWidth() / 2);
+                    Text absCount = new Text(String.valueOf(arrayIndex));
+                    absCount.setX(i + tickOffsetX - absCount.getLayoutBounds().getWidth() / 2);
                     absCount.setY(lineY + 20); // put index under the tick marks
                     getChildren().add(absCount);
                 }
-                count++;
+                arrayIndex++;
             }
         }
 
@@ -220,24 +223,26 @@ public class BSViewer extends Application {
         }
 
         public void incIndex() {
-            drawStart += q * firstTickSpacing;
+            indexStart += 1;
             drawBS();
         }
 
         public void incIndex(int x) {
-            drawStart += x * q * firstTickSpacing;
-            drawBS();
+            if (x > 0 && x < bsArrays[0].length) {
+                indexStart = x;
+                drawBS();
+            }
         }
 
         public void decIndex() {
-            if (drawStart - q * firstTickSpacing >= 0) {
-                drawStart -= q * firstTickSpacing;
+            if (indexStart - 1 >= 0) {
+                indexStart -= 1;
                 drawBS();
             }
         }
 
         public void resetStart() {
-            drawStart = 0;
+            indexStart = 0;
             drawBS();
         }
     }
