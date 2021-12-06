@@ -22,8 +22,8 @@ make sure tick offset and count offset is correct
 
 
 public class BSViewer extends Application {
-    final int p = 3;
-    final int q = 5;
+    final int p = 4;
+    final int q = 8;
 
     int[][] bsArrays = new int[4][1000];
 
@@ -103,22 +103,25 @@ public class BSViewer extends Application {
         int indexStart = 1;
         boolean direction = false;
         double lineSpacing = 100; // space between lines (maybe should be negative for when going up
-        int mod;
+        int currentMod;
+        int nextMod; // the mod of the next line (replace with an if statement in the drawBS method?
         boolean showVerticalLine = false;
         // counts used for knowing when to access arrays.
 
-        boolean visibleIndex = false; // display absolute count with relative count
+        boolean visibleIndex = true; // display absolute count with relative count
 
         public BSPane(boolean direction) {
             this.direction = direction;
 
             if (direction) {
                 lineSpacing = -100;
-                mod = p; // if up we go over every q to draw lines
+                currentMod = p; // if the sheet is going up we draw lines down every p
+                nextMod = q;
                 tickSpacingScaling = (double) q / p;
             }
             else {
-                mod = q;
+                currentMod = q;
+                nextMod = p;
                 tickSpacingScaling = (double) p / q;
             }
 
@@ -162,11 +165,11 @@ public class BSViewer extends Application {
                 drawLines(lineY, tickOffsetX, tickSpacing, coordinates, arrayIndex);
 
                 showVerticalLine = true; // true after the first line is drawn
-                double currentTickOffset = (arrayIndex % p) * tickSpacing; // p going down
-                arrayIndex = (arrayIndex / p) * q + (int) Math.ceil(((arrayIndex % p) * q) / (double) p); // divide by p since going down
+                double currentTickOffset =  (arrayIndex % nextMod) * tickSpacing; // p going down
+                arrayIndex = (arrayIndex / nextMod) * currentMod + (int) Math.ceil(((arrayIndex % nextMod) * currentMod) / (double) nextMod); // divide by p since going down
                 lineY += lineSpacing;
                 tickSpacing *= tickSpacingScaling;
-                tickOffsetX = (arrayIndex % q) * tickSpacing - currentTickOffset;
+                tickOffsetX = tickOffsetX + (arrayIndex % currentMod) * tickSpacing - currentTickOffset;
             }
         }
 
@@ -182,7 +185,7 @@ public class BSViewer extends Application {
                 getChildren().addAll(tick, number);
 
                 // throw everything above in this if statement and offset the numbers to the left or right for visibility?
-                if (arrayIndex % mod == 0 && showVerticalLine) { // connecting vertical lines
+                if (arrayIndex % currentMod == 0 && showVerticalLine) { // connecting vertical lines
                     Line edge = new Line(i + tickOffsetX, lineY, i + tickOffsetX, lineY - lineSpacing); // line goes the opposite way the lines are being built
                     edge.setOpacity(.6);
                     getChildren().add(edge);
