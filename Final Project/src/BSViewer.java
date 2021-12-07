@@ -1,11 +1,13 @@
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
@@ -17,13 +19,13 @@ import java.util.Arrays;
 Todo:
 parser for BTBBTBT
 input from files (separate class with static functions)
-make sure tick offset and count offset is correct
+use B/b offsets in the drawBS method (should just be Bcount + offset count stuff)
  */
 
 
 public class BSViewer extends Application {
-    final int p = 4;
-    final int q = 8;
+    int p = 2;
+    int q = 4;
 
     int[][] bsArrays = new int[4][1000];
 
@@ -38,39 +40,88 @@ public class BSViewer extends Application {
             Arrays.fill(array, 9);
         }
 
+        // initial input for p, q, and array files
+        VBox vbox = new VBox();
+        Scene initialScene = new Scene(vbox, 700, 500);
+
+        HBox pqEntries = new HBox();
+        pqEntries.setAlignment(Pos.CENTER);
+        TextField pEntry = new TextField("p");
+        TextField qEntry = new TextField("q");
+        pqEntries.getChildren().addAll(pEntry,qEntry);
+        vbox.getChildren().addAll(pqEntries);
+
+        // set directory to look in then automatically open files based on BBBTBT? path?
+
+        TextField file1 = new TextField();
+        file1.setPromptText("File 1");
+
+        TextField file2 = new TextField();
+        file2.setPromptText("File 2");
+
+        Button continueButton = new Button("Continue");
+
+        vbox.getChildren().addAll(file1,file2, continueButton);
+
+        primaryStage.setScene(initialScene);
+        primaryStage.show();
+
+        // viewer scene
         BSPane bsPane = new BSPane( false);
         BorderPane borderPane = new BorderPane();
         HBox topMenu = new HBox();
 
-
         borderPane.setTop(topMenu);
         borderPane.setCenter(bsPane);
-        Scene scene = new Scene(borderPane, 700, 500);
+        Scene mainScene = new Scene(borderPane, 700, 500);
 
         // user interface
 
         Text bsInfo = new Text("p: " + String.valueOf(p) + "\nq: " + String.valueOf(q));
         CheckBox indicesBox = new CheckBox("Show Indices");
-        TextField index = new TextField("Jump to index x on line q");
+        TextField indexField = new TextField("Jump to index x");
 
         topMenu.setSpacing(30);
         topMenu.setAlignment(Pos.CENTER);
-        topMenu.getChildren().addAll(bsInfo, indicesBox);
+        topMenu.getChildren().addAll(bsInfo, indicesBox, indexField);
 
         // handlers and listeners
+
+        continueButton.setOnAction(e -> {
+            try {
+                p = Integer.parseInt(pEntry.getText());
+                q = Integer.parseInt(qEntry.getText());
+                primaryStage.setScene(mainScene);
+            }
+            catch (NumberFormatException ex) {
+                //
+            }
+        });
 
         indicesBox.setOnAction(event -> {
             if (indicesBox.isSelected()) bsPane.setVisibleIndex(true);
             else bsPane.setVisibleIndex(false);
         });
 
+        indexField.setOnAction(e -> {
+            try {
+                bsPane.setIndex(Integer.parseInt(indexField.getText()));
+            }
+            catch (NumberFormatException ex) {
+                indexField.setText("");
+                indexField.setPromptText("Invalid Number");
+                indexField.getParent().requestFocus();
+            }
+            bsPane.requestFocus();
+        });
+
         // zoom in by changing the tick spacing with scroll wheel
-        scene.setOnScroll(event -> {
+        mainScene.setOnScroll(event -> {
             if (event.getDeltaY() > 0) bsPane.incSpacing();
             else if (event.getDeltaY() < 0) bsPane.decSpacing();
         });
 
-        scene.setOnKeyPressed(event -> {
+        mainScene.setOnKeyPressed(event -> {
             //bsPane.requestFocus();
             switch (event.getCode()) {
                 case RIGHT:
@@ -85,12 +136,12 @@ public class BSViewer extends Application {
             }
         });
 
-        scene.widthProperty().addListener(e -> {
+        mainScene.widthProperty().addListener(e -> {
             bsPane.drawBS();
         });
 
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        //primaryStage.setScene(mainScene);
+        //primaryStage.show();
         bsPane.drawBS();
     }
 
@@ -100,15 +151,13 @@ public class BSViewer extends Application {
         double tickSpacingScaling; // q/p when going up and p/q going down
         double firstYLocation;
         double tickSize = 5; // height above line in pixels
-        int indexStart = 1;
+        int indexStart = 0;
         boolean direction = false;
         double lineSpacing = 100; // space between lines (maybe should be negative for when going up
         int currentMod;
         int nextMod; // the mod of the next line (replace with an if statement in the drawBS method?
-        boolean showVerticalLine = false;
-        // counts used for knowing when to access arrays.
-
-        boolean visibleIndex = true; // display absolute count with relative count
+        boolean showVerticalLine;
+        boolean visibleIndex = false; // display absolute count with relative count
 
         public BSPane(boolean direction) {
             this.direction = direction;
@@ -127,19 +176,6 @@ public class BSViewer extends Application {
 
             drawBS();
         }
-
-        // An idea: full redraw and just a number redraw depending on user actions
-
-        // everything is relative to the index of the first array
-        // make a more general BS main line object? Then we can add more than two and it will be easier (since its more general)
-        // The bs line connects into the BSPane object where:
-        // BSPane controls the spacing of the ticks on bs line,
-        //      the starting index
-
-        // bs line has the properties: array, bool visibleIndex, tickSpacing, tick offset, ticks, a line, and horizontal line (up/down boolean)
-        // and a reference to the previous bs line to know what the tick spacing/offset should be
-        // bs line has static y value to know spacing between main lines
-
         public void drawBS() {
             getChildren().clear();
 
@@ -230,16 +266,16 @@ public class BSViewer extends Application {
             drawBS();
         }
 
-        public void incIndex(int x) {
-            if (x > 0 && x < bsArrays[0].length) {
-                indexStart = x;
+        public void decIndex() {
+            if (indexStart - 1 >= 0) {
+                indexStart -= 1;
                 drawBS();
             }
         }
 
-        public void decIndex() {
-            if (indexStart - 1 >= 0) {
-                indexStart -= 1;
+        public void setIndex(int x) {
+            if (x >= 0 && x < bsArrays[0].length) {
+                indexStart = x;
                 drawBS();
             }
         }
