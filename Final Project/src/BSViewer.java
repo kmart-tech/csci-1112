@@ -12,6 +12,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 
@@ -20,14 +21,17 @@ Todo:
 parser for BTBBTBT
 input from files (separate class with static functions)
 use B/b offsets in the drawBS method (should just be Bcount + offset count stuff)
+draw what move was used (BT, T) on the left side
+
+Open files in BSp_q/movepath or manually
+
+If files do not exist, ask if we want to generate them.
  */
 
 
 public class BSViewer extends Application {
-    int p = 2;
-    int q = 4;
-
-    int[][] bsArrays = new int[4][1000];
+    int p; // move these into BSPane?
+    int q;
 
     public static void main(String[] args) {
         launch(args);
@@ -36,16 +40,12 @@ public class BSViewer extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        for (int[] array: bsArrays) {
-            Arrays.fill(array, 9);
-        }
-
         // initial input for p, q, and array files
         VBox vbox = new VBox();
 
-
         HBox pqEntries = new HBox();
         pqEntries.setAlignment(Pos.CENTER);
+        pqEntries.setSpacing(20);
         TextField pEntry = new TextField("p");
         TextField qEntry = new TextField("q");
         pqEntries.getChildren().addAll(pEntry,qEntry);
@@ -54,7 +54,7 @@ public class BSViewer extends Application {
         // set directory to look in then automatically open files based on BBBTBT? path?
 
         TextField file1 = new TextField();
-        file1.setPromptText("File 1");
+        file1.setPromptText("Path");
 
         TextField file2 = new TextField();
         file2.setPromptText("File 2");
@@ -72,28 +72,48 @@ public class BSViewer extends Application {
                 p = Integer.parseInt(pEntry.getText());
                 q = Integer.parseInt(qEntry.getText());
                 BSPane bsPane = new BSPane(false);
+
+                int[] array1 = BSFileReader.fileToArray(p,q,file1.getText(),"");
+                int[] array2 = BSFileReader.fileToArray(p,q,file2.getText(),"");
+                if (array1 == null) {
+                    throw new NullPointerException();
+                }
+                else if (array2 == null) {
+
+                }
+
+                bsPane.addArray(array1);
+                bsPane.addArray(array2);
                 Scene mainScene = new Scene(bsPane, 700, 500);
                 primaryStage.setScene(mainScene);
+                bsPane.drawBS();
             }
             catch (NumberFormatException ex) {
+                //
+            }
+            catch (NullPointerException ex) {
                 //
             }
         });
     }
 
     class BSPane extends BorderPane {
-        int height = 100; // pixels between horizontal lines
+        // drawing parameters
         double firstTickSpacing = 50; // since q > p, this is the minimal for tick spacing
         double tickSpacingScaling; // q/p when going up and p/q going down
         double firstYLocation;
         double tickSize = 5; // height above line in pixels
-        int indexStart = 0;
-        boolean direction = false;
         double lineSpacing = 100; // space between lines (maybe should be negative for when going up
-        int currentMod;
-        int nextMod; // the mod of the next line (replace with an if statement in the drawBS method?
         boolean showVerticalLine;
         boolean visibleIndex = false; // display absolute count with relative count
+
+        // array and p,q modulus values
+        int indexStart = 0;
+        boolean direction = false; // true up, false down (change to enum)
+        int currentMod;
+        int nextMod; // the mod of the next line (replace with an if statement in the drawBS method?
+
+        ArrayList<int[]> bsArrays = new ArrayList<int[]>();
 
         Pane centerPane = new Pane();
 
@@ -136,7 +156,7 @@ public class BSViewer extends Application {
             indexField.setOnAction(e -> {
                 try {
                     setIndex(Integer.parseInt(indexField.getText()));
-                    requestfocus();
+                    requestFocus();
                 }
                 catch (NumberFormatException ex) {
                     indexField.setText("");
@@ -271,7 +291,7 @@ public class BSViewer extends Application {
         }
 
         public void setIndex(int x) {
-            if (x >= 0 && x < bsArrays[0].length) {
+            if (x >= 0 && x < bsArrays.get(0).length) {
                 indexStart = x;
                 drawBS();
             }
@@ -282,8 +302,8 @@ public class BSViewer extends Application {
             drawBS();
         }
 
-        public void requestfocus() {
-            centerPane.requestFocus();
+        public void addArray(int[] array) {
+            bsArrays.add(array);
         }
     }
 }
