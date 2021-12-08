@@ -42,7 +42,7 @@ public class BSViewer extends Application {
 
         // initial input for p, q, and array files
         VBox vbox = new VBox();
-        Scene initialScene = new Scene(vbox, 700, 500);
+
 
         HBox pqEntries = new HBox();
         pqEntries.setAlignment(Pos.CENTER);
@@ -63,89 +63,25 @@ public class BSViewer extends Application {
 
         vbox.getChildren().addAll(file1,file2, continueButton);
 
+        Scene initialScene = new Scene(vbox, 700, 500);
         primaryStage.setScene(initialScene);
         primaryStage.show();
-
-        // viewer scene
-        BSPane bsPane = new BSPane( false);
-        BorderPane borderPane = new BorderPane();
-        HBox topMenu = new HBox();
-
-        borderPane.setTop(topMenu);
-        borderPane.setCenter(bsPane);
-        Scene mainScene = new Scene(borderPane, 700, 500);
-
-        // user interface
-
-        Text bsInfo = new Text("p: " + String.valueOf(p) + "\nq: " + String.valueOf(q));
-        CheckBox indicesBox = new CheckBox("Show Indices");
-        TextField indexField = new TextField("Jump to index x");
-
-        topMenu.setSpacing(30);
-        topMenu.setAlignment(Pos.CENTER);
-        topMenu.getChildren().addAll(bsInfo, indicesBox, indexField);
-
-        // handlers and listeners
 
         continueButton.setOnAction(e -> {
             try {
                 p = Integer.parseInt(pEntry.getText());
                 q = Integer.parseInt(qEntry.getText());
+                BSPane bsPane = new BSPane(false);
+                Scene mainScene = new Scene(bsPane, 700, 500);
                 primaryStage.setScene(mainScene);
             }
             catch (NumberFormatException ex) {
                 //
             }
         });
-
-        indicesBox.setOnAction(event -> {
-            if (indicesBox.isSelected()) bsPane.setVisibleIndex(true);
-            else bsPane.setVisibleIndex(false);
-        });
-
-        indexField.setOnAction(e -> {
-            try {
-                bsPane.setIndex(Integer.parseInt(indexField.getText()));
-            }
-            catch (NumberFormatException ex) {
-                indexField.setText("");
-                indexField.setPromptText("Invalid Number");
-                indexField.getParent().requestFocus();
-            }
-            bsPane.requestFocus();
-        });
-
-        // zoom in by changing the tick spacing with scroll wheel
-        mainScene.setOnScroll(event -> {
-            if (event.getDeltaY() > 0) bsPane.incSpacing();
-            else if (event.getDeltaY() < 0) bsPane.decSpacing();
-        });
-
-        mainScene.setOnKeyPressed(event -> {
-            //bsPane.requestFocus();
-            switch (event.getCode()) {
-                case RIGHT:
-                    bsPane.incIndex();
-                    break;
-                case LEFT:
-                    bsPane.decIndex();
-                    break;
-                case R:
-                    bsPane.resetSpacing();
-                    break;
-            }
-        });
-
-        mainScene.widthProperty().addListener(e -> {
-            bsPane.drawBS();
-        });
-
-        //primaryStage.setScene(mainScene);
-        //primaryStage.show();
-        bsPane.drawBS();
     }
 
-    class BSPane extends Pane {
+    class BSPane extends BorderPane {
         int height = 100; // pixels between horizontal lines
         double firstTickSpacing = 50; // since q > p, this is the minimal for tick spacing
         double tickSpacingScaling; // q/p when going up and p/q going down
@@ -158,6 +94,8 @@ public class BSViewer extends Application {
         int nextMod; // the mod of the next line (replace with an if statement in the drawBS method?
         boolean showVerticalLine;
         boolean visibleIndex = false; // display absolute count with relative count
+
+        Pane centerPane = new Pane();
 
         public BSPane(boolean direction) {
             this.direction = direction;
@@ -174,10 +112,69 @@ public class BSViewer extends Application {
                 tickSpacingScaling = (double) p / q;
             }
 
+            HBox topMenu = new HBox();
+
+            setTop(topMenu);
+            setCenter(centerPane);
+
+            Text bsInfo = new Text("p: " + String.valueOf(p) + "\nq: " + String.valueOf(q));
+            CheckBox indicesBox = new CheckBox("Show Indices");
+            TextField indexField = new TextField("Jump to index x");
+
+            topMenu.setSpacing(30);
+            topMenu.setAlignment(Pos.CENTER);
+            topMenu.getChildren().addAll(bsInfo, indicesBox, indexField);
+
+            // handlers and listeners
+
+            indicesBox.setOnAction(event -> {
+                if (indicesBox.isSelected()) setVisibleIndex(true);
+                else setVisibleIndex(false);
+                requestFocus();
+            });
+
+            indexField.setOnAction(e -> {
+                try {
+                    setIndex(Integer.parseInt(indexField.getText()));
+                    requestfocus();
+                }
+                catch (NumberFormatException ex) {
+                    indexField.setText("");
+                    indexField.setPromptText("Invalid Number");
+                    requestFocus();
+                }
+            });
+
+            // zoom in by changing the tick spacing with scroll wheel
+            setOnScroll(event -> {
+                if (event.getDeltaY() > 0) incSpacing();
+                else if (event.getDeltaY() < 0) decSpacing();
+            });
+
+            setOnKeyPressed(event -> {
+                //bsPane.requestFocus();
+                switch (event.getCode()) {
+                    case RIGHT:
+                        incIndex();
+                        break;
+                    case LEFT:
+                        decIndex();
+                        break;
+                    case R:
+                        resetSpacing();
+                        break;
+                }
+            });
+
+            widthProperty().addListener(e -> {
+                drawBS();
+            });
+
             drawBS();
         }
+
         public void drawBS() {
-            getChildren().clear();
+            centerPane.getChildren().clear();
 
             setTranslateX(30); // change based on max label size like BBT
 
@@ -211,27 +208,27 @@ public class BSViewer extends Application {
 
         private void drawLines(double lineY, double tickOffsetX, double tickSpacing, int[] coordinates, int arrayIndex) {
             Line line = new Line(0, lineY, widthProperty().doubleValue(), lineY);
-            getChildren().add(line);
+            centerPane.getChildren().add(line);
 
             for (double i = 0; i < widthProperty().doubleValue(); i += tickSpacing) {
                 Line tick = new Line(i + tickOffsetX, lineY - tickSize, i + tickOffsetX, lineY + tickSize);
                 Text number = new Text(String.valueOf(coordinates[arrayIndex]));
                 number.setX(i + tickOffsetX - number.getLayoutBounds().getWidth() / 2);
                 number.setY(lineY - 10);
-                getChildren().addAll(tick, number);
+                centerPane.getChildren().addAll(tick, number);
 
                 // throw everything above in this if statement and offset the numbers to the left or right for visibility?
                 if (arrayIndex % currentMod == 0 && showVerticalLine) { // connecting vertical lines
                     Line edge = new Line(i + tickOffsetX, lineY, i + tickOffsetX, lineY - lineSpacing); // line goes the opposite way the lines are being built
                     edge.setOpacity(.6);
-                    getChildren().add(edge);
+                    centerPane.getChildren().add(edge);
                 }
 
                 if (visibleIndex) {
                     Text absCount = new Text(String.valueOf(arrayIndex));
                     absCount.setX(i + tickOffsetX - absCount.getLayoutBounds().getWidth() / 2);
                     absCount.setY(lineY + 20); // put index under the tick marks
-                    getChildren().add(absCount);
+                    centerPane.getChildren().add(absCount);
                 }
                 arrayIndex++;
             }
@@ -283,6 +280,10 @@ public class BSViewer extends Application {
         public void resetStart() {
             indexStart = 0;
             drawBS();
+        }
+
+        public void requestfocus() {
+            centerPane.requestFocus();
         }
     }
 }
