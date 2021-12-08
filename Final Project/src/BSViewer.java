@@ -1,3 +1,20 @@
+/*
+Kevin Martinsen
+CSCI 1112 - OOP 2
+
+Final Project
+Todo:
+parser for BTBBTBT
+input from files (separate class with static functions)
+use B/b offsets in the drawBS method (should just be Bcount + offset count stuff)
+draw what move was used (BT, T) on the left side
+ - also need an array of the moves from each line to each line since they will have different offsets (such as T/BT)
+
+Open files in BSp_q/movepath or manually
+
+If files do not exist, ask if we want to generate them.
+ */
+
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -11,23 +28,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.shape.Line;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-
 import java.util.ArrayList;
-import java.util.Arrays;
-
-
-/*
-Todo:
-parser for BTBBTBT
-input from files (separate class with static functions)
-use B/b offsets in the drawBS method (should just be Bcount + offset count stuff)
-draw what move was used (BT, T) on the left side
-
-Open files in BSp_q/movepath or manually
-
-If files do not exist, ask if we want to generate them.
- */
-
 
 public class BSViewer extends Application {
     int p; // move these into BSPane?
@@ -59,9 +60,11 @@ public class BSViewer extends Application {
         TextField file2 = new TextField();
         file2.setPromptText("File 2");
 
+        Text errorText = new Text("");
+
         Button continueButton = new Button("Continue");
 
-        vbox.getChildren().addAll(file1,file2, continueButton);
+        vbox.getChildren().addAll(file1,file2, continueButton, errorText);
 
         Scene initialScene = new Scene(vbox, 700, 500);
         primaryStage.setScene(initialScene);
@@ -79,7 +82,7 @@ public class BSViewer extends Application {
                     throw new NullPointerException();
                 }
                 else if (array2 == null) {
-
+                    throw new NullPointerException();
                 }
 
                 bsPane.addArray(array1);
@@ -89,10 +92,10 @@ public class BSViewer extends Application {
                 bsPane.drawBS();
             }
             catch (NumberFormatException ex) {
-                //
+                errorText.setText("p and q must be integers");
             }
-            catch (NullPointerException ex) {
-                //
+            catch (NullPointerException ex) { // custom file not found exception
+                errorText.setText("file(s) not found");
             }
         });
     }
@@ -186,9 +189,7 @@ public class BSViewer extends Application {
                 }
             });
 
-            widthProperty().addListener(e -> {
-                drawBS();
-            });
+            widthProperty().addListener(e -> drawBS());
 
             drawBS();
         }

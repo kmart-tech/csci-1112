@@ -1,5 +1,6 @@
 /*
 Kevin Martinsen
+CSCI 1112 - OOP 2
 
 BSFileReader is responsible for reading in BS(p,q) files given a p,q, and Cayley graph path into an array
 
@@ -37,7 +38,7 @@ public final class BSFileReader {
         return arrayList.stream().mapToInt(i->i).toArray();
     }
 
-    public static int[] fileToArray(String filePath) {
+    public static int[] fileToArray(String filePath) { // throws file not found exception?
         ArrayList<Integer> arrayList = new ArrayList<>();
         try (
                 BufferedReader input = new BufferedReader(new FileReader(filePath));
